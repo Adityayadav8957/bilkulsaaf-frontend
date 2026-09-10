@@ -1,8 +1,7 @@
 import type { Person } from "@/lib/api/types";
 
-// v2: the composer collapsed from a 4-step wizard to a 2-step one (merged
-// form + preview), so old `step` values wouldn't map correctly onto it.
-const DRAFT_KEY = "dnc:composer-draft:v2";
+// v3: state + city collapsed into a single free-text `location` field.
+const DRAFT_KEY = "dnc:composer-draft:v3";
 
 export type ComposerDraft = {
   step: number;
@@ -10,8 +9,7 @@ export type ComposerDraft = {
   designation: string;
   organization: string;
   attachedPerson: Person | null;
-  state: string;
-  city: string;
+  location: string;
   description: string;
   savedAt: string;
 };

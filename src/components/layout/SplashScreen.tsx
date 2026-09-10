@@ -83,7 +83,7 @@ export function SplashScreen() {
         <div className="border-t border-ink" />
       </div>
 
-      <div className="splash-stamp mt-7 rounded-sm border-2 border-dashed border-red px-4 py-2">
+      <div className="splash-stamp mt-7 rounded-sm border-2 border-dashed border-red bg-red-tint px-4 py-2">
         <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] text-red sm:text-base">
           Definitely Clean
         </span>

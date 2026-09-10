@@ -38,7 +38,7 @@ export function PostCard({ post }: { post: Post }) {
             <Link href={personHref} className="font-serif text-lg font-bold leading-none text-ink hover:underline">
               {post.personSnapshot.name}
             </Link>
-            <span className="rotate-[-4deg] border-2 border-dashed border-red px-1.5 py-0.5 font-mono text-[8px] font-medium uppercase tracking-[0.16em] text-red">
+            <span className="rotate-[-4deg] border-2 border-dashed border-red bg-red-tint px-1.5 py-0.5 font-mono text-[8px] font-medium uppercase tracking-[0.16em] text-red">
               definitely clean
             </span>
           </div>
