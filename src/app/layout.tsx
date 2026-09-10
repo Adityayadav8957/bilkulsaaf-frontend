@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { NewsTicker } from "@/components/layout/NewsTicker";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import { Providers } from "@/components/layout/Providers";
 import { getFeed } from "@/lib/api/posts";
 import "./globals.css";
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${instrumentSans.variable} ${plexMono.variable} ${fraunces.variable} ${ptSerif.variable} h-full`}
     >
       <body className="flex min-h-full flex-col bg-bg-outer text-text antialiased">
+        <SplashScreen />
         <Providers>
           <Header />
           <NewsTicker items={tickerItems} />
