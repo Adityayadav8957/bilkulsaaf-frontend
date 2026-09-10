@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { getFeed } from "@/lib/api/posts";
 import { listCities, listStates } from "@/lib/api/map";
 import { GuestGatedFeed } from "@/components/post/GuestGatedFeed";
@@ -10,10 +12,9 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { RightRail } from "@/components/layout/RightRail";
 import { buildMetadata, SITE_NAME, SITE_TAGLINE } from "@/lib/seo/metadata";
 import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
+import { ChipRowSkeleton, FeedSkeleton } from "@/components/shared/Skeletons";
 import { formatCount } from "@/lib/format";
 import type { FeedSort } from "@/lib/api/types";
-
-export const revalidate = 60;
 
 export const metadata: Metadata = buildMetadata({
   title: `${SITE_NAME} — ${SITE_TAGLINE}`,
@@ -24,22 +25,70 @@ export const metadata: Metadata = buildMetadata({
 
 const VALID_SORTS: FeedSort[] = ["latest", "popular", "discussed", "trending"];
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sort?: string }>;
-}) {
+type HomeSearchParams = Promise<{ sort?: string }>;
+
+/**
+ * Nationwide roll-up for the stat tiles. Public and non-personalized, so it's
+ * cached (~60s, matching the old `revalidate = 60`) and prerenders into the
+ * route's App Shell.
+ */
+async function getHomeTotals() {
+  "use cache";
+  cacheLife("minutes");
+
+  const [states, cities] = await Promise.all([listStates(), listCities({ limit: 50 })]);
+
+  return {
+    stateCount: states.length,
+    cityCount: cities.items.length,
+    totalPosts: states.reduce((sum, s) => sum + s.postCount, 0),
+    totalVotesCast: states.reduce((sum, s) => sum + s.voteCount, 0),
+  };
+}
+
+/** One page of the public feed, cached per sort. */
+async function getSortedFeed(sort: FeedSort) {
+  "use cache";
+  cacheLife("minutes");
+
+  return getFeed({ sort, limit: 8 });
+}
+
+/** `?sort=` is request-time data, so it may only be read inside <Suspense>. */
+async function resolveSort(searchParams: HomeSearchParams): Promise<FeedSort> {
   const { sort: rawSort } = await searchParams;
-  const sort: FeedSort = VALID_SORTS.includes(rawSort as FeedSort) ? (rawSort as FeedSort) : "latest";
+  return VALID_SORTS.includes(rawSort as FeedSort) ? (rawSort as FeedSort) : "latest";
+}
 
-  const [feed, states, cities] = await Promise.all([
-    getFeed({ sort, limit: 8 }),
-    listStates(),
-    listCities({ limit: 50 }),
-  ]);
+async function SortChips({ searchParams }: { searchParams: HomeSearchParams }) {
+  return <FeedChips basePath="/" activeSort={await resolveSort(searchParams)} />;
+}
 
-  const totalPosts = states.reduce((sum, s) => sum + s.postCount, 0);
-  const totalVotesCast = states.reduce((sum, s) => sum + s.voteCount, 0);
+async function HomeFeed({
+  searchParams,
+  totalPosts,
+}: {
+  searchParams: HomeSearchParams;
+  totalPosts: number;
+}) {
+  const feed = await getSortedFeed(await resolveSort(searchParams));
+
+  if (feed.items.length === 0) {
+    return <EmptyState title="No posts here yet." subtitle="Suspiciously clean around here." />;
+  }
+
+  return (
+    <GuestGatedFeed
+      posts={feed.items}
+      hasMore={!!feed.nextCursor}
+      nextHref={null}
+      totalCount={totalPosts}
+    />
+  );
+}
+
+export default async function HomePage({ searchParams }: { searchParams: HomeSearchParams }) {
+  const { stateCount, cityCount, totalPosts, totalVotesCast } = await getHomeTotals();
 
   return (
     <div className="px-4 pt-3 pb-10 sm:px-6 sm:pt-10">
@@ -75,35 +124,27 @@ export default async function HomePage({
 
       <section className="hidden mt-8 grid-cols-2 gap-3 sm:grid sm:grid-cols-4 lg:hidden">
         <StatTile label="posts filed by citizens" value={formatCount(totalPosts)} />
-        <StatTile label="states with activity" value={states.length} />
+        <StatTile label="states with activity" value={stateCount} />
         <StatTile label="community votes cast" value={formatCount(totalVotesCast)} />
-        <StatTile label="cities represented" value={formatCount(cities.items.length)} />
+        <StatTile label="cities represented" value={formatCount(cityCount)} />
       </section>
 
       <section className="mt-0 sm:mt-12 lg:mt-8 lg:flex lg:items-start lg:gap-7">
         <div className="min-w-0 flex-1">
           <h2 className="hidden sm:block lg:font-serif lg:text-[22px]">The dispatches</h2>
           <div className="sticky top-16 z-30 -mx-4 mt-3 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:top-[108px] lg:mx-0 lg:border-b-2 lg:border-ink lg:px-0 lg:py-3">
-            <FeedChips basePath="/" activeSort={sort} />
+            <Suspense fallback={<ChipRowSkeleton count={4} />}>
+              <SortChips searchParams={searchParams} />
+            </Suspense>
           </div>
 
           <div className="mt-4">
             <GuestBanner />
           </div>
 
-          {feed.items.length === 0 ? (
-            <EmptyState
-              title="No posts here yet."
-              subtitle="Suspiciously clean around here."
-            />
-          ) : (
-            <GuestGatedFeed
-              posts={feed.items}
-              hasMore={!!feed.nextCursor}
-              nextHref={null}
-              totalCount={totalPosts}
-            />
-          )}
+          <Suspense fallback={<FeedSkeleton count={3} />}>
+            <HomeFeed searchParams={searchParams} totalPosts={totalPosts} />
+          </Suspense>
         </div>
 
         <RightRail />

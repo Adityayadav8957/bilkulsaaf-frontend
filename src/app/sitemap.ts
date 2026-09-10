@@ -1,14 +1,10 @@
 import type { MetadataRoute } from "next";
+import { cacheLife } from "next/cache";
 import { getFeed } from "@/lib/api/posts";
 import { listPeople } from "@/lib/api/people";
 import { listCities, listStates } from "@/lib/api/map";
 import { absoluteUrl } from "@/lib/seo/metadata";
 import { slugify } from "@/lib/slug";
-
-// Regenerate at most once an hour — the sitemap doesn't need to reflect a
-// single new post instantly, and this bounds how often we page through
-// every resource below.
-export const revalidate = 3600;
 
 // The backend's cursor pagination never reports a total count, so each
 // collector pages until it runs out of cursor or hits this safety cap.
@@ -83,7 +79,14 @@ async function collectCityUrls(): Promise<MetadataRoute.Sitemap> {
   return urls;
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+// Regenerate at most once an hour — the sitemap doesn't need to reflect a
+// single new post instantly, and this bounds how often we page through every
+// resource above. (Under Cache Components this replaces `revalidate = 3600`;
+// the directive can't go on the `sitemap` export itself, hence the helper.)
+async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
+  "use cache";
+  cacheLife("hours");
+
   const staticUrls: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), changeFrequency: "hourly", priority: 1.0 },
     { url: absoluteUrl("/posts"), changeFrequency: "hourly", priority: 0.9 },
@@ -104,4 +107,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   return [...staticUrls, ...postUrls, ...peopleUrls, ...stateUrls, ...cityUrls];
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return buildSitemap();
 }

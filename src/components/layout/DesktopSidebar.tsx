@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAuthGate } from "@/components/auth/AuthGateProvider";
 import { HomeIcon, MapPinIcon, PlusIcon, TrendingIcon, UserIcon } from "@/components/icons";
+import { MastheadDate } from "@/components/layout/MastheadDate";
 import type { ComponentType } from "react";
 
 const ITEMS: { href: string; label: string; Icon: ComponentType<{ className?: string; size?: number }> }[] = [
@@ -30,14 +31,12 @@ export function DesktopSidebar() {
     router.push("/create");
   }
 
-  const today = new Date();
-
   return (
     <aside className="relative z-20 hidden w-[240px] flex-none border-r border-border-2 lg:block">
       <div className="sticky top-[108px] py-[18px] pr-5">
         <div className="rule-red mb-4 pb-2.5">
           <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-meta-2">
-            {today.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long" })}
+            <MastheadDate options={{ weekday: "long", day: "2-digit", month: "long" }} />
           </p>
           <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-red">
             Vol. II · Issue #1009

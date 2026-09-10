@@ -7,14 +7,16 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { RightRail } from "@/components/layout/RightRail";
 import { buildMetadata } from "@/lib/seo/metadata";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = buildMetadata({
   title: "Search",
   description: "Search people, cities, organisations, and posts.",
   path: "/search",
   noindex: true,
 });
-
-export const dynamic = "force-dynamic";
 
 type SearchType = "all" | "posts" | "people";
 

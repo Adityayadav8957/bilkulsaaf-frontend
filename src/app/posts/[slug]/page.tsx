@@ -18,7 +18,9 @@ import { formatRelativeTime, locationLabel } from "@/lib/format";
 import { tintForNumber } from "@/lib/tint";
 import type { Post } from "@/lib/api/types";
 
-export const revalidate = 60;
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 async function loadPost(slug: string): Promise<Post | null> {
   try {

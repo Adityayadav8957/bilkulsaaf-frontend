@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import { getLeaderboard } from "@/lib/api/leaderboard";
 import { listStates } from "@/lib/api/map";
 import { GuestLockedCard } from "@/components/shared/GuestLockedCard";
@@ -11,8 +12,15 @@ import { slugify } from "@/lib/slug";
  * Fetches its own data (Next dedupes identical requests already made higher
  * in the tree within the same render pass, so this is effectively free on
  * pages that already loaded states/leaderboard for their own hero content).
+ *
+ * None of this is personalized (the guest/member gating happens client-side in
+ * GuestLockedCard), so the whole component is cached and prerenders into the
+ * App Shell of every page that renders it.
  */
 export async function RightRail() {
+  "use cache";
+  cacheLife("minutes");
+
   const [topVoted, states] = await Promise.all([
     getLeaderboard("most-voted", 3),
     listStates(),

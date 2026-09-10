@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAuthGate } from "@/components/auth/AuthGateProvider";
 import { PlusIcon, SearchIcon } from "@/components/icons";
+import { MastheadDate } from "@/components/layout/MastheadDate";
 
 export function Header() {
   const router = useRouter();
@@ -25,7 +26,9 @@ export function Header() {
         <div className="mx-auto flex h-[34px] max-w-7xl items-center justify-between pl-[246px] pr-6 font-mono text-[10px] uppercase tracking-[0.2em] text-white/65">
           <span>Vol. II · Issue #1009</span>
           <span>भारत · अनौपचारिक जनहित संस्करण</span>
-          <span>{new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+          <span>
+            <MastheadDate options={{ day: "2-digit", month: "short", year: "numeric" }} />
+          </span>
         </div>
       </div>
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">

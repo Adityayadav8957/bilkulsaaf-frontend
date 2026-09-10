@@ -9,6 +9,13 @@ import type { NextConfig } from "next";
 const API_ORIGIN = process.env.API_ORIGIN || "http://127.0.0.1:5000/api";
 
 const nextConfig: NextConfig = {
+  // Cache Components (Next 16) replaces the old route-segment caching configs
+  // (`dynamic` / `revalidate` / `fetchCache`) with `use cache` + `cacheLife`,
+  // and turns on Partial Prerendering by default: every route ships a static
+  // App Shell instantly on navigation while genuinely dynamic parts stream in
+  // behind <Suspense>. It also keeps recently-visited routes mounted via
+  // React's <Activity>, so bottom-nav tab switching feels app-like.
+  cacheComponents: true,
   async rewrites() {
     return [
       {

@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { getFeed } from "@/lib/api/posts";
 import { getRisingPeople } from "@/lib/api/leaderboard";
 import { listStates } from "@/lib/api/map";
@@ -7,10 +9,9 @@ import { SearchIcon } from "@/components/icons";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { RightRail } from "@/components/layout/RightRail";
 import { NearbyLocationPicker } from "@/components/explore/NearbyLocationPicker";
+import { ListRowsSkeleton } from "@/components/shared/Skeletons";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { formatCount, formatRelativeTime, locationLabel } from "@/lib/format";
-
-export const revalidate = 60;
 
 export const metadata: Metadata = buildMetadata({
   title: "Explore",
@@ -18,25 +19,120 @@ export const metadata: Metadata = buildMetadata({
   path: "/explore",
 });
 
-export default async function ExplorePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ near?: string }>;
-}) {
-  const { near } = await searchParams;
+type ExploreSearchParams = Promise<{ near?: string }>;
 
-  const [trending, rising, states, recent] = await Promise.all([
+/**
+ * Everything on Explore except the "Around you" section is public and
+ * non-personalized, so it's cached (~60s, matching the old `revalidate = 60`)
+ * and prerenders into the route's App Shell.
+ */
+async function getExploreData() {
+  "use cache";
+  cacheLife("minutes");
+
+  const [trending, rising, states] = await Promise.all([
     getFeed({ sort: "trending", limit: 6 }),
     getRisingPeople(6),
     listStates(),
-    getFeed({ sort: "latest", limit: 6 }),
   ]);
 
-  const topStates = states.slice(0, 8).map((s) => s.state);
+  return { trending, rising, topStates: states.slice(0, 8).map((s) => s.state) };
+}
+
+/**
+ * Rendered inside its own cached scope because `formatRelativeTime` reads
+ * `Date.now()`, which can't be evaluated during a prerender unless the result
+ * is captured in a cache entry (it expires with the entry, same as before).
+ */
+async function RecentPosts() {
+  "use cache";
+  cacheLife("minutes");
+
+  const recent = await getFeed({ sort: "latest", limit: 6 });
+
+  return (
+    <div className="mt-4 flex flex-col gap-px overflow-hidden rounded-card border border-border-1 bg-border-1">
+      {recent.items.map((post) => (
+        <Link
+          key={post._id}
+          href={`/posts/${post.slug || post._id}`}
+          className="flex gap-3 bg-white p-3.5"
+        >
+          <div className="texture-avatar h-10 w-10 flex-none rounded-xl" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{post.personSnapshot.name}</p>
+            <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-text-muted-2">
+              {post.description}
+            </p>
+            <p className="mt-1.5 font-mono text-[11px] text-meta-4">
+              {formatCount(post.upvoteCount)} votes · {formatRelativeTime(post.createdAt)}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** Cached per state, so switching the picker is served from cache too. */
+async function getNearbyFeed(state: string) {
+  "use cache";
+  cacheLife("minutes");
+
+  return getFeed({ state, sort: "latest", limit: 4 });
+}
+
+/**
+ * `?near=` is request-time data, so this section reads it inside <Suspense>
+ * while the rest of the page ships in the shell.
+ */
+async function AroundYou({
+  searchParams,
+  topStates,
+}: {
+  searchParams: ExploreSearchParams;
+  topStates: string[];
+}) {
+  const { near } = await searchParams;
   const nearbyState = near && topStates.includes(near) ? near : topStates[0];
-  const nearby = nearbyState
-    ? await getFeed({ state: nearbyState, sort: "latest", limit: 4 })
-    : null;
+  const nearby = nearbyState ? await getNearbyFeed(nearbyState) : null;
+
+  if (!nearbyState || !nearby) return null;
+
+  return (
+    <>
+      <div className="flex items-baseline justify-between">
+        <h2>Around you</h2>
+        <NearbyLocationPicker states={topStates} selected={nearbyState} />
+      </div>
+      <div className="mt-4 flex flex-col gap-2">
+        {nearby.items.length === 0 && (
+          <p className="rounded-card border border-border-1 bg-white p-3.5 text-sm text-text-muted">
+            No posts from {nearbyState} yet.
+          </p>
+        )}
+        {nearby.items.map((post) => (
+          <Link
+            key={post._id}
+            href={`/posts/${post.slug || post._id}`}
+            className="rounded-card border border-border-1 bg-white p-3.5"
+          >
+            <p className="font-mono text-xs text-meta-2">
+              {locationLabel(post.personSnapshot.state, post.personSnapshot.city)}
+            </p>
+            <p className="mt-1.5 text-[14.5px] leading-snug text-text">{post.description}</p>
+            <p className="mt-2 font-mono text-[11.5px] text-meta-2">
+              {formatCount(post.upvoteCount)} votes · {formatCount(post.commentCount)} comments
+            </p>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default async function ExplorePage({ searchParams }: { searchParams: ExploreSearchParams }) {
+  const { trending, rising, topStates } = await getExploreData();
 
   return (
     <div className="px-4 py-6 sm:px-6 sm:py-10">
@@ -143,59 +239,28 @@ export default async function ExplorePage({
         </div>
       </section>
 
-      {nearbyState && nearby && (
+      {topStates.length > 0 && (
         <section id="around-you" className="mt-9">
-          <div className="flex items-baseline justify-between">
-            <h2>Around you</h2>
-            <NearbyLocationPicker states={topStates} selected={nearbyState} />
-          </div>
-          <div className="mt-4 flex flex-col gap-2">
-            {nearby.items.length === 0 && (
-              <p className="rounded-card border border-border-1 bg-white p-3.5 text-sm text-text-muted">
-                No posts from {nearbyState} yet.
-              </p>
-            )}
-            {nearby.items.map((post) => (
-              <Link
-                key={post._id}
-                href={`/posts/${post.slug || post._id}`}
-                className="rounded-card border border-border-1 bg-white p-3.5"
-              >
-                <p className="font-mono text-xs text-meta-2">
-                  {locationLabel(post.personSnapshot.state, post.personSnapshot.city)}
-                </p>
-                <p className="mt-1.5 text-[14.5px] leading-snug text-text">{post.description}</p>
-                <p className="mt-2 font-mono text-[11.5px] text-meta-2">
-                  {formatCount(post.upvoteCount)} votes · {formatCount(post.commentCount)} comments
-                </p>
-              </Link>
-            ))}
-          </div>
+          <Suspense
+            fallback={
+              <>
+                <div className="flex items-baseline justify-between">
+                  <h2>Around you</h2>
+                </div>
+                <div className="mt-4">
+                  <ListRowsSkeleton count={4} />
+                </div>
+              </>
+            }
+          >
+            <AroundYou searchParams={searchParams} topStates={topStates} />
+          </Suspense>
         </section>
       )}
 
       <section className="mt-9 mb-0">
         <h2>Recent posts</h2>
-        <div className="mt-4 flex flex-col gap-px overflow-hidden rounded-card border border-border-1 bg-border-1">
-          {recent.items.map((post) => (
-            <Link
-              key={post._id}
-              href={`/posts/${post.slug || post._id}`}
-              className="flex gap-3 bg-white p-3.5"
-            >
-              <div className="texture-avatar h-10 w-10 flex-none rounded-xl" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-ink">{post.personSnapshot.name}</p>
-                <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-text-muted-2">
-                  {post.description}
-                </p>
-                <p className="mt-1.5 font-mono text-[11px] text-meta-4">
-                  {formatCount(post.upvoteCount)} votes · {formatRelativeTime(post.createdAt)}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <RecentPosts />
       </section>
       </div>
 
