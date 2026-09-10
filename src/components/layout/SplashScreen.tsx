@@ -24,12 +24,15 @@ function BuildingMark() {
       <rect x="30" y="114" width="140" height="10" fill="#131312" />
       <rect x="18" y="124" width="164" height="12" fill="#131312" />
 
-      <rect x="97" y="4" width="3" height="30" fill="#131312" />
+      {/* Dome apex sits at y=18 (a true semicircle: 108-wide chord, r=54) — the
+          pole stops right there instead of running into it, so the two don't
+          fuse into one black mass. */}
+      <rect x="97" y="2" width="3" height="17" fill="#131312" />
       <g className="flag-wave">
-        <rect x="100" y="5" width="24" height="4.8" fill="#ff9933" />
-        <rect x="100" y="9.8" width="24" height="4.8" fill="#ffffff" />
-        <rect x="100" y="14.6" width="24" height="4.8" fill="#128807" />
-        <circle cx="112" cy="12.2" r="1.7" fill="#0a2a6e" />
+        <rect x="100" y="3" width="24" height="4.8" fill="#ff9933" />
+        <rect x="100" y="7.8" width="24" height="4.8" fill="#ffffff" />
+        <rect x="100" y="12.6" width="24" height="4.8" fill="#128807" />
+        <circle cx="112" cy="10.2" r="1.7" fill="#0a2a6e" />
       </g>
     </svg>
   );
