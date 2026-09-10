@@ -217,7 +217,7 @@ export function ComposerWizard() {
   const identityLabel = user?.anonymousIdentity.displayName ?? "";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg-outer">
+    <div className="fixed inset-0 z-[1300] flex flex-col bg-bg-outer">
       <input
         ref={fileInputRef}
         type="file"

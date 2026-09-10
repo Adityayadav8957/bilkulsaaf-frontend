@@ -4,16 +4,16 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Log in",
-  description: "Log in or get your anonymous citizen number.",
-  path: "/login",
+  title: "Get your citizen number",
+  description: "Create an anonymous citizen account.",
+  path: "/signup",
   noindex: true,
 });
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <Suspense fallback={null}>
-      <LoginForm mode="login" />
+      <LoginForm mode="register" />
     </Suspense>
   );
 }

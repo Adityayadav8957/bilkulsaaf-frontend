@@ -33,7 +33,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
       {children}
       {reason && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-4 sm:items-center"
+          className="fixed inset-0 z-[1300] flex items-end justify-center bg-scrim p-4 sm:items-center"
           onClick={close}
         >
           <div
@@ -52,8 +52,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
             </ul>
             <div className="mt-5 flex flex-col gap-2">
               <Link
-                href="/login"
-                className="rounded-pill bg-ink px-4 py-3 text-center text-sm font-medium text-white"
+                href="/signup"
+                className="rounded-pill bg-red px-4 py-3 text-center text-sm font-medium text-white"
                 onClick={close}
               >
                 Continue anonymously

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApiClientError, login, register } from "@/lib/api/browser";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -11,15 +12,17 @@ const PROMISES = [
   "You can keep browsing everything without an account",
 ];
 
-export function LoginForm() {
+export function LoginForm({ mode }: { mode: "register" | "login" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refresh } = useAuth();
-  const [mode, setMode] = useState<"register" | "login">("register");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+
+  const redirect = searchParams.get("redirect");
+  const otherHref = `${mode === "register" ? "/login" : "/signup"}${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,8 +35,7 @@ export function LoginForm() {
         await login(email, password);
       }
       await refresh();
-      const redirectTo = searchParams.get("redirect") || "/";
-      router.push(redirectTo);
+      router.push(redirect || "/");
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : "Something went wrong.");
@@ -46,16 +48,16 @@ export function LoginForm() {
     <div className="mx-auto max-w-sm px-4 py-16 sm:px-6">
       <h1>{mode === "register" ? "Get your citizen number" : "Log in"}</h1>
       <p className="mt-2 text-text-muted">
-        {mode === "register"
-          ? "Say it without saying who you are."
-          : "Welcome back, citizen."}
+        {mode === "register" ? "Say it without saying who you are." : "Welcome back, citizen."}
       </p>
 
-      <ul className="mt-5 space-y-1.5 text-sm text-text-muted-2">
-        {PROMISES.map((promise) => (
-          <li key={promise}>· {promise}</li>
-        ))}
-      </ul>
+      {mode === "register" && (
+        <ul className="mt-5 space-y-1.5 text-sm text-text-muted-2">
+          {PROMISES.map((promise) => (
+            <li key={promise}>· {promise}</li>
+          ))}
+        </ul>
+      )}
 
       <form onSubmit={submit} className="mt-6 space-y-3">
         <input
@@ -79,19 +81,18 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-pill bg-ink px-4 py-3 text-sm font-medium text-white disabled:opacity-60"
+          className="w-full rounded-pill bg-red py-3 text-sm font-medium text-white disabled:opacity-60"
         >
           {isPending ? "…" : mode === "register" ? "Get my citizen number" : "Log in"}
         </button>
       </form>
 
-      <button
-        type="button"
-        onClick={() => setMode(mode === "register" ? "login" : "register")}
-        className="mt-4 w-full text-center text-sm text-text-muted hover:text-ink"
+      <Link
+        href={otherHref}
+        className="mt-4 block w-full text-center text-sm text-text-muted hover:text-ink"
       >
         {mode === "register" ? "Already have an account? Log in" : "New here? Get a citizen number"}
-      </button>
+      </Link>
     </div>
   );
 }

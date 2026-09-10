@@ -50,8 +50,8 @@ export function GuestGatedFeed({
               : "There are more posts behind this. Log in to keep scrolling."}
           </p>
           <Link
-            href="/login"
-            className="mt-5 inline-block rounded-pill bg-ink px-6 py-3 text-sm font-semibold text-white"
+            href="/signup"
+            className="mt-5 inline-block rounded-pill bg-red px-6 py-3 text-sm font-semibold text-white"
           >
             Want to join the chaos?
           </Link>

@@ -109,6 +109,10 @@
   --radius-tag: var(--radius-tag);
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--color-bg-outer);
   background-image: url("/paper-texture.svg");

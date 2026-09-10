@@ -38,8 +38,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           Log in and you&apos;ll be handed a citizen number instead of a name.
         </p>
         <Link
-          href="/login"
-          className="mt-6 inline-block rounded-pill bg-ink px-5 py-3 text-sm font-medium text-white"
+          href="/signup"
+          className="mt-6 inline-block rounded-pill bg-red px-5 py-3 text-sm font-medium text-white"
         >
           Get my citizen number
         </Link>

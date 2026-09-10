@@ -24,8 +24,8 @@ export function NewsTicker({ items }: { items: TickerItem[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="border-b-2 border-ink bg-ink">
-      <div className="mx-auto flex max-w-7xl items-stretch">
+    <div className="min-w-0 border-b-2 border-ink bg-ink">
+      <div className="mx-auto flex min-w-0 max-w-7xl items-stretch">
         <span className="flex flex-none items-center gap-1.5 bg-red pl-4 pr-3.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white sm:pl-6">
           <span className="h-1.5 w-1.5 flex-none animate-pulse rounded-full bg-white" />
           Breaking

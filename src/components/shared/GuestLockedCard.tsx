@@ -30,8 +30,8 @@ export function GuestLockedCard({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-card bg-white/70 p-4 text-center backdrop-blur-[1px]">
             <p className="text-sm font-semibold text-ink">Log in to see this</p>
             <Link
-              href="/login"
-              className="rounded-pill bg-ink px-4 py-1.5 text-xs font-semibold text-white"
+              href="/signup"
+              className="rounded-pill bg-red px-4 py-1.5 text-xs font-semibold text-white"
             >
               Get my citizen number
             </Link>

@@ -14,8 +14,8 @@ export function GuestBanner() {
         Peeking is free. Voting, posting and arguing require a (still anonymous) account.
       </p>
       <Link
-        href="/login"
-        className="mt-3 inline-block rounded-pill bg-ink px-4 py-2.5 text-sm font-medium text-white"
+        href="/signup"
+        className="mt-3 inline-block rounded-pill bg-red px-4 py-2.5 text-sm font-medium text-white"
       >
         Get my citizen number
       </Link>

@@ -19,6 +19,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "Account",
     links: [
+      { href: "/signup", label: "Get a citizen number" },
       { href: "/login", label: "Log in" },
       { href: "/create", label: "Post anonymously" },
     ],
