@@ -25,10 +25,12 @@ function BuildingMark() {
       <rect x="18" y="124" width="164" height="12" fill="#131312" />
 
       <rect x="97" y="4" width="3" height="30" fill="#131312" />
-      <path d="M100 6 L138 16 L100 26 Z" fill="#ff9933" />
-      <path d="M100 12.7 L138 16 L100 19.3 Z" fill="#ffffff" />
-      <circle cx="119" cy="16" r="2" fill="#0a2a6e" />
-      <path d="M100 19.3 L138 16 L100 26 Z" fill="#128807" />
+      <g className="flag-wave">
+        <rect x="100" y="5" width="24" height="4.8" fill="#ff9933" />
+        <rect x="100" y="9.8" width="24" height="4.8" fill="#ffffff" />
+        <rect x="100" y="14.6" width="24" height="4.8" fill="#128807" />
+        <circle cx="112" cy="12.2" r="1.7" fill="#0a2a6e" />
+      </g>
     </svg>
   );
 }
