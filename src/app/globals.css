@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: var(--font-instrument-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-headline: var(--font-fraunces);
+  --font-newsbody: var(--font-pt-serif);
+
+  /* Design tokens ported from Design /desktop.html */
+  --color-bg: #fcfcfb;
+  --color-bg-outer: #fafaf9;
+
+  --color-red: #e0201f;
+  --color-red-dark: #941619;
+  --color-red-deep: #6f0f12;
+  --color-red-tint: #fdeceb;
+  --color-red-tint-2: #f8d9d6;
+
+  --color-ink: #131312;
+  --color-ink-2: #1a1a17;
+  --color-ink-3: #1f1e1b;
+  --color-surface-dark: #2e2d29;
+
+  --color-text: #20201d;
+  --color-text-2: #2a2925;
+  --color-text-muted: #5c594f;
+  --color-text-muted-2: #4a4740;
+  --color-text-muted-3: #6f6c64;
+
+  --color-meta-1: #7d7a71;
+  --color-meta-2: #8b877d;
+  --color-meta-3: #98948a;
+  --color-meta-4: #a09c92;
+  --color-meta-5: #a8a49a;
+
+  --color-border-1: #e6e4de;
+  --color-border-2: #e0ded7;
+  --color-border-3: #eeece6;
+  --color-border-4: #f0eee8;
+  --color-border-5: #d8d5cd;
+  --color-border-6: #dedbd3;
+  --color-border-7: #cfccc3;
+
+  --color-disabled-bg: #dedbd3;
+  --color-disabled-text: #a09c92;
+
+  --color-scrim: #13131299;
+  --color-scrim-2: #13131266;
+
+  --color-white: #ffffff;
+
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-modal: 18px;
+  --radius-tag: 6px;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-headline);
+  --font-newsbody: var(--font-newsbody);
+
+  --color-bg: var(--color-bg);
+  --color-bg-outer: var(--color-bg-outer);
+
+  --color-red: var(--color-red);
+  --color-red-dark: var(--color-red-dark);
+  --color-red-deep: var(--color-red-deep);
+  --color-red-tint: var(--color-red-tint);
+  --color-red-tint-2: var(--color-red-tint-2);
+
+  --color-ink: var(--color-ink);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-3: var(--color-ink-3);
+  --color-surface-dark: var(--color-surface-dark);
+
+  --color-text: var(--color-text);
+  --color-text-2: var(--color-text-2);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-muted-2: var(--color-text-muted-2);
+  --color-text-muted-3: var(--color-text-muted-3);
+
+  --color-meta-1: var(--color-meta-1);
+  --color-meta-2: var(--color-meta-2);
+  --color-meta-3: var(--color-meta-3);
+  --color-meta-4: var(--color-meta-4);
+  --color-meta-5: var(--color-meta-5);
+
+  --color-border-1: var(--color-border-1);
+  --color-border-2: var(--color-border-2);
+  --color-border-3: var(--color-border-3);
+  --color-border-4: var(--color-border-4);
+  --color-border-5: var(--color-border-5);
+  --color-border-6: var(--color-border-6);
+  --color-border-7: var(--color-border-7);
+
+  --color-disabled-bg: var(--color-disabled-bg);
+  --color-disabled-text: var(--color-disabled-text);
+
+  --color-scrim: var(--color-scrim);
+  --color-scrim-2: var(--color-scrim-2);
+
+  --color-white: var(--color-white);
+
+  --radius-pill: var(--radius-pill);
+  --radius-card: var(--radius-card);
+  --radius-modal: var(--radius-modal);
+  --radius-tag: var(--radius-tag);
+}
+
+body {
+  background-color: var(--color-bg-outer);
+  background-image: url("/paper-texture.svg");
+  background-repeat: repeat;
+  background-size: 260px 260px;
+  color: var(--color-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+.h1 {
+  font-family: var(--font-headline), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-size: clamp(32px, 5.4vw, 54px);
+  line-height: 1.03;
+}
+
+h2,
+.h2 {
+  font-family: var(--font-headline), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: clamp(20px, 2.5vw, 26px);
+  line-height: 1.15;
+}
+
+h3,
+.h3 {
+  font-family: var(--font-headline), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: clamp(16px, 1.6vw, 18px);
+  line-height: 1.25;
+}
+
+/* Long-form article/body copy set in the newsprint body serif rather than the UI sans. */
+.font-newsbody {
+  font-family: var(--font-newsbody), Georgia, serif;
+}
+
+/* Double rule under the masthead / section heads, classic broadsheet nameplate treatment. */
+.rule-red {
+  border-top: 3px solid var(--color-ink);
+  border-bottom: 1px solid var(--color-ink);
+  padding-top: 2px;
+}
+
+/* Breaking-news ticker: a continuous right-to-left scroll built from a doubled track. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  animation: ticker-scroll 32s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+/* Diagonal-stripe placeholder texture for avatars/media blocks, ported from
+   Design /desktop.html + mobile.html (repeating-linear-gradient skeleton). */
+.texture-avatar {
+  background-image: repeating-linear-gradient(135deg, #eceae4 0 6px, #e2dfd8 6px 12px);
+}
+
+.texture-media {
+  background-image: repeating-linear-gradient(135deg, #f0eee8 0 8px, #e6e3db 8px 16px);
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* The map keeps the visual language of the app while remaining a real,
+   interactive Leaflet map underneath. */
+.map-surface .leaflet-tile-pane {
+  filter: grayscale(1) sepia(0.14) contrast(0.86) brightness(1.08);
+}
+
+.map-surface .leaflet-control-attribution {
+  background: rgb(252 252 251 / 72%);
+  color: var(--color-meta-2);
+  font-size: 9px;
+}
+
+.map-surface .leaflet-popup-content-wrapper,
+.map-surface .leaflet-popup-tip {
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(19 19 18 / 18%);
+}
+
+.map-surface .leaflet-popup-content {
+  margin: 12px 14px;
+}
+
+@media (min-width: 1024px) {
+  body {
+    background-color: #f5f3ee;
+    background-image:
+      radial-gradient(#d9d5cc 0.7px, transparent 0.7px),
+      repeating-linear-gradient(
+        90deg,
+        rgb(19 19 18 / 4%) 0,
+        rgb(19 19 18 / 4%) 1px,
+        transparent 1px,
+        transparent 320px
+      );
+    background-size: 7px 7px, 320px 100%;
+  }
+}
