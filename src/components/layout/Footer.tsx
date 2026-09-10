@@ -34,8 +34,11 @@ export function Footer() {
           <span className="font-serif text-2xl font-bold tracking-[-0.03em] text-ink">
             BilkulSaaf<span className="text-red">.</span>
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-meta-3">
-            Definitely, clean since Vol. I
+          <span className="text-right font-mono text-[10px] uppercase tracking-[0.2em] text-meta-3">
+            <span className="block">Definitely, clean since Vol. I</span>
+            <span className="mt-1 block normal-case tracking-[0.15em] text-meta-2">
+              भारत · अनौपचारिक जनहित संस्करण
+            </span>
           </span>
         </div>
         <div className="mt-8 grid grid-cols-2 gap-8 sm:grid-cols-3">

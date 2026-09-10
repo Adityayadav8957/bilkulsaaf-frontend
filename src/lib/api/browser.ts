@@ -71,6 +71,7 @@ export function createPost(input: {
   personName: string;
   designation?: string;
   organization?: string;
+  personPhotoUrl?: string;
   state: string;
   city?: string;
   description: string;

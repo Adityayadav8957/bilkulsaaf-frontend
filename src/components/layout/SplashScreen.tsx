@@ -2,15 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const MESSAGES = [
-  "Sanitising public statements…",
-  "Polishing the paperwork…",
-  "Redacting absolutely nothing…",
-  "Consulting the ministry of vibes…",
-];
-
-const DURATION_MS = 1700;
-const FADE_MS = 350;
+const TOTAL_MS = 2200;
 
 function BuildingMark() {
   return (
@@ -41,48 +33,45 @@ function BuildingMark() {
   );
 }
 
+/**
+ * One-shot boot splash — shown once per browser session (root layout stays
+ * mounted across client-side navigations, so this only runs on a real page
+ * load). The progress bar, stamp slam, and dismiss fade are pure CSS
+ * keyframe animations (see .splash-fill / .splash-stamp / .splash-overlay in
+ * globals.css) rather than a JS-driven timer loop, so they can't get stuck
+ * if a timer is throttled — a single setTimeout just unmounts the node once
+ * the animation is done.
+ */
 export function SplashScreen() {
-  const [progress, setProgress] = useState(0);
-  const [fading, setFading] = useState(false);
   const [mounted, setMounted] = useState(true);
-  const startRef = useRef<number | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    // React Strict Mode (dev only) double-invokes effects: mount, cleanup,
+    // mount again — synchronously, before paint. A naive cleanup that
+    // clears the timer breaks that on the second pass, since sessionStorage
+    // now already has "splash-shown" set from the first pass, so the splash
+    // would hide itself instantly. This component lives for the app's
+    // lifetime (mounted once in the root layout, never really unmounted),
+    // so skip the duplicate pass entirely and let the one real timer run.
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     if (sessionStorage.getItem("splash-shown")) {
       setMounted(false);
       return;
     }
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduceMotion ? 250 : DURATION_MS;
-    startRef.current = Date.now();
-
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - (startRef.current ?? Date.now());
-      const pct = Math.min(100, (elapsed / duration) * 100);
-      setProgress(pct);
-      if (pct >= 100) {
-        clearInterval(interval);
-        sessionStorage.setItem("splash-shown", "1");
-        setFading(true);
-        setTimeout(() => setMounted(false), FADE_MS);
-      }
-    }, 40);
-
-    return () => clearInterval(interval);
+    sessionStorage.setItem("splash-shown", "1");
+    setTimeout(() => setMounted(false), TOTAL_MS);
   }, []);
 
   if (!mounted) return null;
-
-  const message = MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress / 100) * MESSAGES.length))];
 
   return (
     <div
       role="status"
       aria-label="Loading BilkulSaaf"
-      className={`fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-bg-outer px-6 transition-opacity duration-[350ms] ${
-        fading ? "pointer-events-none opacity-0" : "opacity-100"
-      }`}
+      className="splash-overlay fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-bg-outer px-6"
       style={{
         backgroundImage: "url(/paper-texture.svg)",
         backgroundRepeat: "repeat",
@@ -95,7 +84,7 @@ export function SplashScreen() {
         <div className="border-t border-ink" />
       </div>
 
-      <div className="mt-7 -rotate-6 rounded-sm border-2 border-dashed border-red px-4 py-2">
+      <div className="splash-stamp mt-7 rounded-sm border-2 border-dashed border-red px-4 py-2">
         <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] text-red sm:text-base">
           Definitely Clean
         </span>
@@ -107,14 +96,12 @@ export function SplashScreen() {
       <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.25em] text-red sm:text-xs">
         Obviously · Completely · Definitely
       </p>
+      <p className="mt-1 font-mono text-[11px] text-meta-2">भारत · अनौपचारिक जनहित संस्करण</p>
 
-      <p className="mt-8 text-sm text-text-muted">{message}</p>
+      <p className="mt-8 text-sm text-text-muted">Sanitising public statements…</p>
 
       <div className="mt-4 h-1.5 w-full max-w-xs overflow-hidden rounded-full border border-border-6 bg-border-5">
-        <div
-          className="h-full rounded-full bg-red"
-          style={{ width: `${progress}%`, transition: "width 80ms linear" }}
-        />
+        <div className="splash-fill h-full rounded-full bg-red" />
       </div>
     </div>
   );

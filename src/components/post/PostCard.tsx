@@ -18,12 +18,21 @@ export function PostCard({ post }: { post: Post }) {
         <span className="text-white/50">public record</span>
       </div>
       <div className="flex items-center gap-3 p-3.5 pb-2.5 sm:p-4 sm:pb-3">
-        <div
-          aria-hidden="true"
-          className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
-        >
-          <span className="font-mono text-[9px] text-meta-3">FACE</span>
-        </div>
+        {post.personSnapshot.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.personSnapshot.photoUrl}
+            alt=""
+            className="h-11 w-11 flex-none rounded-xl object-cover"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
+          >
+            <span className="font-mono text-[9px] text-meta-3">FACE</span>
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Link href={personHref} className="font-serif text-lg font-bold leading-none text-ink hover:underline">

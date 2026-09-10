@@ -9,7 +9,12 @@ export function PersonCard({ person }: { person: Person }) {
       className="block rounded-card border border-border-3 bg-white p-4 hover:border-border-7"
     >
       <div className="flex items-center gap-3">
-        <div aria-hidden="true" className="texture-avatar h-11 w-11 flex-none rounded-full" />
+        {person.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={person.photoUrl} alt="" className="h-11 w-11 flex-none rounded-full object-cover" />
+        ) : (
+          <div aria-hidden="true" className="texture-avatar h-11 w-11 flex-none rounded-full" />
+        )}
         <div className="min-w-0">
           <p className="truncate font-semibold text-ink">{person.name}</p>
           <p className="truncate text-xs text-meta-2">

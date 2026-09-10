@@ -111,7 +111,16 @@ export default async function PostDetailPage({
 
       <article className="rule-red overflow-hidden rounded-card border border-border-3 bg-white p-5">
         <div className="flex items-start gap-3">
-          <div aria-hidden="true" className="texture-avatar h-12 w-12 flex-none rounded-full" />
+          {post.personSnapshot.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.personSnapshot.photoUrl}
+              alt=""
+              className="h-12 w-12 flex-none rounded-full object-cover"
+            />
+          ) : (
+            <div aria-hidden="true" className="texture-avatar h-12 w-12 flex-none rounded-full" />
+          )}
           <div className="min-w-0 flex-1">
             <Link href={`/people/${post.person}`} className="hover:underline">
               <h1>{post.personSnapshot.name}</h1>

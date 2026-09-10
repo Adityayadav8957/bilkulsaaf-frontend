@@ -106,7 +106,12 @@ export default async function PersonDetailPage({
       <div className="min-w-0 max-w-3xl flex-1">
 
       <div className="flex items-start gap-4">
-        <div aria-hidden="true" className="texture-avatar h-16 w-16 flex-none rounded-full" />
+        {person.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={person.photoUrl} alt="" className="h-16 w-16 flex-none rounded-full object-cover" />
+        ) : (
+          <div aria-hidden="true" className="texture-avatar h-16 w-16 flex-none rounded-full" />
+        )}
         <div className="min-w-0">
           <h1>{person.name}</h1>
           <p className="mt-1 text-text-muted">

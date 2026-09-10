@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getMe } from "@/lib/api/auth";
 import { getMyActivity, getMyComments, getMyPosts, getMySavedPosts } from "@/lib/api/users";
 import { PostCard } from "@/components/post/PostCard";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { formatRelativeTime, locationLabel } from "@/lib/format";
@@ -95,8 +96,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </div>
         </div>
 
-        <div className="mt-6 flex items-center gap-2 font-mono text-[11px] text-white/45">
-          <span className="h-1.5 w-1.5 rounded-full bg-white/60" /> Member since {memberSince}
+        <div className="mt-6 flex items-center justify-between gap-2">
+          <p className="flex items-center gap-2 font-mono text-[11px] text-white/45">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/60" /> Member since {memberSince}
+          </p>
+          <LogoutButton />
         </div>
 
         <dl className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-3">

@@ -38,10 +38,26 @@ function personSubtitle(person: { designation?: string; organization?: string })
   return [person.designation, person.organization].filter(Boolean).join(", ") || "Reported by citizens";
 }
 
+/** Object URL for a local file preview (image/video thumbnails), revoked on change/unmount. */
+function useObjectUrl(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file) {
+      setUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+  return url;
+}
+
 export function ComposerWizard() {
   const router = useRouter();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const personPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const pendingMediaKind = useRef<"image" | "video">("image");
 
   const [step, setStep] = useState<Step>(0);
@@ -56,10 +72,15 @@ export function ComposerWizard() {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileKind, setFileKind] = useState<"image" | "video">("image");
+  const [personPhotoFile, setPersonPhotoFile] = useState<File | null>(null);
 
   const [suggestions, setSuggestions] = useState<Person[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const filePreview = useObjectUrl(file);
+  const personPhotoPreview = useObjectUrl(personPhotoFile);
+  const canAddPersonPhoto = !attachedPerson || !attachedPerson.photoUrl;
 
   // Load an initial "who's trending" suggestion list before the user types
   // anything, and restore a locally-saved draft (if any) from a prior visit.
@@ -123,6 +144,7 @@ export function ComposerWizard() {
     setOrganization(person.organization || "");
     setState(person.location.state);
     setCity(person.location.city || "");
+    setPersonPhotoFile(null);
   }
 
   function detachPerson() {
@@ -130,6 +152,16 @@ export function ComposerWizard() {
     setPersonName("");
     setDesignation("");
     setOrganization("");
+    setPersonPhotoFile(null);
+  }
+
+  function openPersonPhotoPicker() {
+    personPhotoInputRef.current?.click();
+  }
+
+  function onPersonPhotoChosen(e: React.ChangeEvent<HTMLInputElement>) {
+    setPersonPhotoFile(e.target.files?.[0] ?? null);
+    e.target.value = "";
   }
 
   function discardDraft() {
@@ -143,6 +175,7 @@ export function ComposerWizard() {
     setCity("");
     setDescription("");
     setFile(null);
+    setPersonPhotoFile(null);
     setRestoredDraft(false);
   }
 
@@ -192,10 +225,25 @@ export function ComposerWizard() {
         });
       }
 
+      let personPhotoUrl: string | undefined;
+      if (personPhotoFile) {
+        const uploadInfo = await getUploadUrl({
+          fileName: personPhotoFile.name,
+          contentType: personPhotoFile.type,
+        });
+        await fetch(uploadInfo.uploadUrl, {
+          method: "PUT",
+          body: personPhotoFile,
+          headers: { "Content-Type": personPhotoFile.type },
+        });
+        personPhotoUrl = uploadInfo.publicUrl;
+      }
+
       const post = await createPost({
         personName,
         designation: designation || undefined,
         organization: organization || undefined,
+        personPhotoUrl,
         state,
         city: city || undefined,
         description,
@@ -223,6 +271,15 @@ export function ComposerWizard() {
         type="file"
         className="hidden"
         onChange={onFileChosen}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <input
+        ref={personPhotoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onPersonPhotoChosen}
         aria-hidden="true"
         tabIndex={-1}
       />
@@ -286,6 +343,55 @@ export function ComposerWizard() {
               className="w-full rounded-pill border border-border-5 bg-white px-4 py-3.5 text-sm outline-none focus:border-ink"
             />
 
+            {canAddPersonPhoto ? (
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={openPersonPhotoPicker}
+                  className="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-xl border border-dashed border-border-5 bg-white"
+                >
+                  {personPhotoPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={personPhotoPreview} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-mono text-[8px] uppercase leading-tight text-meta-3">
+                      Add
+                      <br />
+                      photo
+                    </span>
+                  )}
+                </button>
+                <p className="min-w-0 flex-1 text-xs leading-relaxed text-meta-2">
+                  {personPhotoFile ? (
+                    <>
+                      Photo attached.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setPersonPhotoFile(null)}
+                        className="underline hover:text-ink"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    "Optional — add a photo of this person so others recognise them."
+                  )}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 flex items-center gap-3 text-xs text-meta-2">
+                {attachedPerson?.photoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={attachedPerson.photoUrl}
+                    alt=""
+                    className="h-14 w-14 flex-none rounded-xl object-cover"
+                  />
+                )}
+                Already has a photo on file.
+              </p>
+            )}
+
             {attachedPerson && (
               <div className="mt-3">
                 <span className="inline-flex items-center gap-1.5 rounded-pill bg-ink pl-3 pr-2 py-1.5 font-mono text-xs text-white">
@@ -305,12 +411,21 @@ export function ComposerWizard() {
             {attachedPerson && (
               <div className="mt-3 rounded-card border border-border-3 bg-white p-4">
                 <div className="flex items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
-                  >
-                    <span className="font-mono text-[9px] text-meta-3">FACE</span>
-                  </span>
+                  {attachedPerson.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={attachedPerson.photoUrl}
+                      alt=""
+                      className="h-11 w-11 flex-none rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
+                    >
+                      <span className="font-mono text-[9px] text-meta-3">FACE</span>
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="font-mono text-[10px] uppercase tracking-wide text-meta-2">
                       You&apos;re posting about
@@ -443,17 +558,26 @@ export function ComposerWizard() {
                 {state ? locationLabel(state, city) : "Location"}
               </button>
             </div>
-            {file && (
-              <p className="mt-2 truncate font-mono text-xs text-meta-2">
-                Attached: {file.name}
-                <button
-                  type="button"
-                  onClick={() => setFile(null)}
-                  className="ml-2 text-meta-3 underline hover:text-ink"
-                >
-                  remove
-                </button>
-              </p>
+            {file && filePreview && (
+              <div className="mt-3 overflow-hidden rounded-card border border-border-3 bg-white">
+                {fileKind === "image" ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={filePreview} alt="Attachment preview" className="max-h-64 w-full object-cover" />
+                ) : (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption
+                  <video src={filePreview} controls className="max-h-64 w-full bg-ink" />
+                )}
+                <p className="flex items-center justify-between gap-2 px-3 py-2 font-mono text-xs text-meta-2">
+                  <span className="truncate">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFile(null)}
+                    className="flex-none text-meta-3 underline hover:text-ink"
+                  >
+                    remove
+                  </button>
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -462,12 +586,21 @@ export function ComposerWizard() {
           <div className="mt-6">
             <div className="rounded-card border border-border-3 bg-white p-4">
               <div className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-full"
-                >
-                  <span className="font-mono text-[9px] text-meta-3">FACE</span>
-                </span>
+                {personPhotoPreview || attachedPerson?.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={personPhotoPreview || attachedPerson?.photoUrl}
+                    alt=""
+                    className="h-11 w-11 flex-none rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-full"
+                  >
+                    <span className="font-mono text-[9px] text-meta-3">FACE</span>
+                  </span>
+                )}
                 <div className="min-w-0">
                   <p className="font-semibold text-ink">{attachedPerson?.name || personName}</p>
                   <p className="text-xs text-meta-2">

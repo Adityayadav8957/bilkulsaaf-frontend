@@ -13,6 +13,7 @@ export type PersonSnapshot = {
   name: string;
   designation?: string;
   organization?: string;
+  photoUrl?: string;
   state: string;
   city?: string;
 };
@@ -46,6 +47,7 @@ export type Person = {
   name: string;
   designation?: string;
   organization?: string;
+  photoUrl?: string;
   location: { state: string; city?: string };
   slugKey: string;
   stats: { postsCount: number; totalVotes: number; totalComments: number };
