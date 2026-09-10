@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cacheLife } from "next/cache";
 import { instrumentSans, plexMono, fraunces, ptSerif } from "@/lib/fonts";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/seo/metadata";
@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   },
   description:
     "A satirical public feed where anonymous citizens post about public officials, vote on how clean it looks, and argue about it in the comments.",
+};
+
+// `resizes-content` shrinks the layout viewport when the on-screen keyboard
+// opens (instead of the keyboard just covering fixed-positioned content), so
+// the composer's sticky "Continue" button stays above the keyboard on mobile
+// instead of hiding behind it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
 };
 
 /**

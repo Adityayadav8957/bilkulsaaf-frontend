@@ -1,6 +1,8 @@
 import type { Person } from "@/lib/api/types";
 
-const DRAFT_KEY = "dnc:composer-draft:v1";
+// v2: the composer collapsed from a 4-step wizard to a 2-step one (merged
+// form + preview), so old `step` values wouldn't map correctly onto it.
+const DRAFT_KEY = "dnc:composer-draft:v2";
 
 export type ComposerDraft = {
   step: number;
