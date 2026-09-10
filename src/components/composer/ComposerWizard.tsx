@@ -9,7 +9,7 @@ import {
   getUploadUrl,
   listPeopleClient,
 } from "@/lib/api/browser";
-import { searchIndianCities, searchIndianStates, type PlaceSuggestion } from "@/lib/geo/locationAutocomplete";
+import { searchIndianCities, type PlaceSuggestion } from "@/lib/geo/locationAutocomplete";
 import { CameraIcon, ChevronLeftIcon } from "@/components/icons";
 import { locationLabel } from "@/lib/format";
 import {
@@ -30,6 +30,14 @@ const ATTACHMENT_ACCEPT: Record<"image" | "video", string> = {
 
 function personSubtitle(person: { designation?: string; organization?: string }): string {
   return [person.designation, person.organization].filter(Boolean).join(", ") || "Reported by citizens";
+}
+
+/** "Pune, Maharashtra" -> {city: "Pune", state: "Maharashtra"}; "Maharashtra" -> {city: "", state: "Maharashtra"}. */
+function parseLocation(value: string): { state: string; city: string } {
+  const parts = value.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return { state: "", city: "" };
+  if (parts.length === 1) return { state: parts[0], city: "" };
+  return { city: parts[0], state: parts[parts.length - 1] };
 }
 
 /** Object URL for a local file preview (image/video thumbnails), revoked on change/unmount. */
@@ -84,18 +92,17 @@ export function ComposerWizard() {
   const [designation, setDesignation] = useState("");
   const [organization, setOrganization] = useState("");
   const [attachedPerson, setAttachedPerson] = useState<Person | null>(null);
-  const [state, setState] = useState("");
-  const [city, setCity] = useState("");
+  const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileKind, setFileKind] = useState<"image" | "video">("image");
   const [personPhotoFile, setPersonPhotoFile] = useState<File | null>(null);
 
   const [suggestions, setSuggestions] = useState<Person[]>([]);
-  const [stateSuggestions, setStateSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [citySuggestions, setCitySuggestions] = useState<PlaceSuggestion[]>([]);
-  const lastPickedStateRef = useRef<string | null>(null);
-  const lastPickedCityRef = useRef<string | null>(null);
+  const [nameFieldOpen, setNameFieldOpen] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [locationFieldOpen, setLocationFieldOpen] = useState(false);
+  const lastPickedLocationRef = useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -121,8 +128,7 @@ export function ComposerWizard() {
       setDesignation(draft.designation);
       setOrganization(draft.organization);
       setAttachedPerson(draft.attachedPerson);
-      setState(draft.state);
-      setCity(draft.city);
+      setLocation(draft.location);
       setDescription(draft.description);
       setRestoredDraft(true);
     }
@@ -137,52 +143,32 @@ export function ComposerWizard() {
       designation,
       organization,
       attachedPerson,
-      state,
-      city,
+      location,
       description,
     });
-  }, [step, personName, designation, organization, attachedPerson, state, city, description]);
+  }, [step, personName, designation, organization, attachedPerson, location, description]);
 
   // Location type-ahead (Photon/OpenStreetMap) — only while on the form step,
   // and skipped when the field already exactly matches the last suggestion
   // the user picked, so selecting one doesn't immediately reopen the list.
   useEffect(() => {
     if (step !== 0) return;
-    const query = state.trim();
-    if (query.length < 2 || query === lastPickedStateRef.current) {
-      setStateSuggestions([]);
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      searchIndianStates(query).then((results) => {
-        if (!cancelled) setStateSuggestions(results);
-      });
-    }, 400);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [state, step]);
-
-  useEffect(() => {
-    if (step !== 0) return;
-    const query = city.trim();
-    if (query.length < 2 || query === lastPickedCityRef.current) {
-      setCitySuggestions([]);
+    const query = location.trim();
+    if (query.length < 2 || query === lastPickedLocationRef.current) {
+      setLocationSuggestions([]);
       return;
     }
     let cancelled = false;
     const timer = setTimeout(() => {
       searchIndianCities(query).then((results) => {
-        if (!cancelled) setCitySuggestions(results);
+        if (!cancelled) setLocationSuggestions(results);
       });
     }, 400);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [city, step]);
+  }, [location, step]);
 
   async function searchPeople(q: string) {
     setPersonName(q);
@@ -204,9 +190,11 @@ export function ComposerWizard() {
     setPersonName(person.name);
     setDesignation(person.designation || "");
     setOrganization(person.organization || "");
-    setState(person.location.state);
-    setCity(person.location.city || "");
+    const personLocation = locationLabel(person.location.state, person.location.city);
+    lastPickedLocationRef.current = personLocation;
+    setLocation(personLocation);
     setPersonPhotoFile(null);
+    setNameFieldOpen(false);
   }
 
   function detachPerson() {
@@ -217,20 +205,11 @@ export function ComposerWizard() {
     setPersonPhotoFile(null);
   }
 
-  function pickStateSuggestion(s: PlaceSuggestion) {
-    lastPickedStateRef.current = s.state;
-    setState(s.state);
-    setStateSuggestions([]);
-  }
-
-  function pickCitySuggestion(s: PlaceSuggestion) {
-    lastPickedCityRef.current = s.city;
-    setCity(s.city);
-    if (s.state) {
-      lastPickedStateRef.current = s.state;
-      setState(s.state);
-    }
-    setCitySuggestions([]);
+  function pickLocationSuggestion(s: PlaceSuggestion) {
+    lastPickedLocationRef.current = s.label;
+    setLocation(s.label);
+    setLocationSuggestions([]);
+    setLocationFieldOpen(false);
   }
 
   function openPersonPhotoPicker() {
@@ -249,8 +228,7 @@ export function ComposerWizard() {
     setDesignation("");
     setOrganization("");
     setAttachedPerson(null);
-    setState("");
-    setCity("");
+    setLocation("");
     setDescription("");
     setFile(null);
     setPersonPhotoFile(null);
@@ -274,7 +252,7 @@ export function ComposerWizard() {
 
   function canContinue() {
     if (step === 0) {
-      return personName.trim().length > 0 && state.trim().length > 0 && description.trim().length > 0;
+      return personName.trim().length > 0 && location.trim().length > 0 && description.trim().length > 0;
     }
     return true;
   }
@@ -317,6 +295,7 @@ export function ComposerWizard() {
         personPhotoUrl = uploadInfo.publicUrl;
       }
 
+      const { state, city } = parseLocation(location);
       const post = await createPost({
         personName,
         designation: designation || undefined,
@@ -338,7 +317,7 @@ export function ComposerWizard() {
 
   const previewLocation = attachedPerson
     ? locationLabel(attachedPerson.location.state, attachedPerson.location.city)
-    : locationLabel(state, city);
+    : location;
   const previewSubtitle = attachedPerson ? personSubtitle(attachedPerson) : personSubtitle({ designation, organization });
   const identityLabel = user?.anonymousIdentity.displayName ?? "";
 
@@ -415,208 +394,185 @@ export function ComposerWizard() {
             {/* 1 — Who is this about? (required) */}
             <section>
               <SectionLabel index={1} title="Who is this about?" hint="required" />
-              <div className="mt-3">
+
+              {/* Photo up top, like setting a profile picture. */}
+              <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
+                {canAddPersonPhoto ? (
+                  <button
+                    type="button"
+                    onClick={openPersonPhotoPicker}
+                    aria-label="Add a photo of this person"
+                    className="group relative flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border-5 bg-white transition-colors hover:border-ink"
+                  >
+                    {personPhotoPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={personPhotoPreview} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <CameraIcon size={22} className="text-meta-3 group-hover:text-ink" />
+                    )}
+                    <span className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bg-outer bg-ink text-white">
+                      <span className="text-sm leading-none">{personPhotoPreview ? "✎" : "+"}</span>
+                    </span>
+                  </button>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={attachedPerson?.photoUrl}
+                    alt=""
+                    className="h-20 w-20 flex-none rounded-full object-cover"
+                  />
+                )}
+                <p className="max-w-[220px] text-xs leading-relaxed text-meta-2">
+                  {!canAddPersonPhoto ? (
+                    "Already has a photo on file."
+                  ) : personPhotoFile ? (
+                    <>
+                      Photo attached.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setPersonPhotoFile(null)}
+                        className="underline hover:text-ink"
+                      >
+                        Remove
+                      </button>
+                    </>
+                  ) : (
+                    "Optional — add a photo so others recognise them."
+                  )}
+                </p>
+              </div>
+
+              <div className="relative mt-4">
                 <input
                   value={personName}
                   onChange={(e) => searchPeople(e.target.value)}
+                  onFocus={() => setNameFieldOpen(true)}
+                  onBlur={() => setNameFieldOpen(false)}
                   placeholder="Start typing a name, office or position"
                   className="w-full rounded-pill border border-border-5 bg-white px-4 py-3.5 text-sm outline-none focus:border-ink"
                 />
-
-                <div className="mt-3 flex items-center gap-3">
-                  {canAddPersonPhoto ? (
-                    <button
-                      type="button"
-                      onClick={openPersonPhotoPicker}
-                      aria-label="Add a photo of this person"
-                      className="group relative flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border-5 bg-white transition-colors hover:border-ink"
-                    >
-                      {personPhotoPreview ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={personPhotoPreview} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <CameraIcon size={20} className="text-meta-3 group-hover:text-ink" />
-                      )}
-                      <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bg-outer bg-ink text-white">
-                        <span className="text-sm leading-none">{personPhotoPreview ? "✎" : "+"}</span>
-                      </span>
-                    </button>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={attachedPerson?.photoUrl}
-                      alt=""
-                      className="h-16 w-16 flex-none rounded-full object-cover"
-                    />
-                  )}
-                  <p className="min-w-0 flex-1 text-xs leading-relaxed text-meta-2">
-                    {!canAddPersonPhoto ? (
-                      "Already has a photo on file."
-                    ) : personPhotoFile ? (
-                      <>
-                        Photo attached.{" "}
+                {nameFieldOpen && suggestions.length > 0 && (
+                  <ul className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-card border border-border-3 bg-white shadow-lg">
+                    {suggestions.map((person) => (
+                      <li key={person._id} className="border-b border-border-3 last:border-b-0">
                         <button
                           type="button"
-                          onClick={() => setPersonPhotoFile(null)}
-                          className="underline hover:text-ink"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => pickSuggestion(person)}
+                          className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-border-4"
                         >
-                          Remove
+                          <span
+                            aria-hidden="true"
+                            className="texture-avatar h-10 w-10 flex-none rounded-lg"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-ink">
+                              {person.name}
+                            </span>
+                            <span className="block truncate text-xs text-meta-2">
+                              {personSubtitle(person)}
+                              {" · "}
+                              {locationLabel(person.location.state, person.location.city)}
+                            </span>
+                          </span>
+                          <span className="flex-none font-mono text-xs text-meta-3">
+                            {person.stats.postsCount} post{person.stats.postsCount === 1 ? "" : "s"}
+                          </span>
                         </button>
-                      </>
-                    ) : (
-                      "Optional — add a photo of this person so others recognise them."
-                    )}
-                  </p>
-                </div>
-
-                {attachedPerson && (
-                  <div className="mt-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-pill bg-ink pl-3 pr-2 py-1.5 font-mono text-xs text-white">
-                      <span className="text-white/60">ABOUT</span> {attachedPerson.name}
-                      <button
-                        type="button"
-                        onClick={detachPerson}
-                        aria-label="Detach person, choose someone else"
-                        className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-white/70 hover:text-white"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  </div>
-                )}
-
-                {attachedPerson && (
-                  <div className="mt-3 rounded-card border border-border-3 bg-white p-4">
-                    <div className="flex items-start gap-3">
-                      {attachedPerson.photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={attachedPerson.photoUrl}
-                          alt=""
-                          className="h-11 w-11 flex-none rounded-xl object-cover"
-                        />
-                      ) : (
-                        <span
-                          aria-hidden="true"
-                          className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
-                        >
-                          <span className="font-mono text-[9px] text-meta-3">FACE</span>
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-mono text-[10px] uppercase tracking-wide text-meta-2">
-                          You&apos;re posting about
-                        </p>
-                        <p className="mt-0.5 text-base font-bold text-ink">{attachedPerson.name}</p>
-                        <p className="mt-0.5 truncate text-xs text-meta-2">
-                          {personSubtitle(attachedPerson)}
-                          {" · "}
-                          {locationLabel(attachedPerson.location.state, attachedPerson.location.city)}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="mt-3 font-mono text-[11px] leading-relaxed text-meta-2">
-                      {attachedPerson.stats.postsCount} post
-                      {attachedPerson.stats.postsCount === 1 ? "" : "s"} already on file · this post
-                      will be publicly visible and appear on this person&apos;s page.
-                    </p>
-                  </div>
-                )}
-
-                {suggestions.length > 0 && (
-                  <div className="mt-4">
-                    <p className="font-mono text-xs text-meta-2">Suggestions</p>
-                    <ul className="mt-2 space-y-2">
-                      {suggestions.map((person) => (
-                        <li key={person._id}>
-                          <button
-                            type="button"
-                            onClick={() => pickSuggestion(person)}
-                            className="flex w-full items-center gap-3 rounded-card border border-border-3 bg-white px-3.5 py-3 text-left hover:border-border-7"
-                          >
-                            <span
-                              aria-hidden="true"
-                              className="texture-avatar h-10 w-10 flex-none rounded-lg"
-                            />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-ink">
-                                {person.name}
-                              </span>
-                              <span className="block truncate text-xs text-meta-2">
-                                {personSubtitle(person)}
-                                {" · "}
-                                {locationLabel(person.location.state, person.location.city)}
-                              </span>
-                            </span>
-                            <span className="flex-none font-mono text-xs text-meta-3">
-                              {person.stats.postsCount} post{person.stats.postsCount === 1 ? "" : "s"}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
+
+              {attachedPerson && (
+                <div className="mt-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-pill bg-ink pl-3 pr-2 py-1.5 font-mono text-xs text-white">
+                    <span className="text-white/60">ABOUT</span> {attachedPerson.name}
+                    <button
+                      type="button"
+                      onClick={detachPerson}
+                      aria-label="Detach person, choose someone else"
+                      className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-white/70 hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+              )}
+
+              {attachedPerson && (
+                <div className="mt-3 rounded-card border border-border-3 bg-white p-4">
+                  <div className="flex items-start gap-3">
+                    {attachedPerson.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={attachedPerson.photoUrl}
+                        alt=""
+                        className="h-11 w-11 flex-none rounded-xl object-cover"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="texture-avatar flex h-11 w-11 flex-none items-center justify-center rounded-xl"
+                      >
+                        <span className="font-mono text-[9px] text-meta-3">FACE</span>
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-[10px] uppercase tracking-wide text-meta-2">
+                        You&apos;re posting about
+                      </p>
+                      <p className="mt-0.5 text-base font-bold text-ink">{attachedPerson.name}</p>
+                      <p className="mt-0.5 truncate text-xs text-meta-2">
+                        {personSubtitle(attachedPerson)}
+                        {" · "}
+                        {locationLabel(attachedPerson.location.state, attachedPerson.location.city)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 font-mono text-[11px] leading-relaxed text-meta-2">
+                    {attachedPerson.stats.postsCount} post
+                    {attachedPerson.stats.postsCount === 1 ? "" : "s"} already on file · this post
+                    will be publicly visible and appear on this person&apos;s page.
+                  </p>
+                </div>
+              )}
             </section>
 
             {/* 2 — Where does this not happen? (required) */}
             <section className="border-t border-border-3 pt-6">
               <SectionLabel index={2} title="Where does this not happen?" hint="required" />
-              <div className="mt-3 space-y-2">
-                <div>
-                  <input
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    placeholder="State"
-                    className="w-full rounded-pill border border-border-5 bg-white px-4 py-3.5 text-sm outline-none focus:border-ink"
-                  />
-                  {stateSuggestions.length > 0 && (
-                    <ul className="mt-2 space-y-1.5">
-                      {stateSuggestions.map((s) => (
-                        <li key={s.state}>
-                          <button
-                            type="button"
-                            onClick={() => pickStateSuggestion(s)}
-                            className="w-full rounded-card border border-border-3 bg-white px-3.5 py-2.5 text-left text-sm text-ink hover:border-border-7"
-                          >
-                            {s.state}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
-                  <input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    className="w-full rounded-pill border border-border-5 bg-white px-4 py-3.5 text-sm outline-none focus:border-ink"
-                  />
-                  {citySuggestions.length > 0 && (
-                    <ul className="mt-2 space-y-1.5">
-                      {citySuggestions.map((s) => (
-                        <li key={s.label}>
-                          <button
-                            type="button"
-                            onClick={() => pickCitySuggestion(s)}
-                            className="flex w-full items-baseline justify-between gap-2 rounded-card border border-border-3 bg-white px-3.5 py-2.5 text-left hover:border-border-7"
-                          >
-                            <span className="text-sm text-ink">{s.city}</span>
-                            <span className="flex-none font-mono text-[11px] text-meta-2">{s.state}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <p className="font-mono text-[10px] text-meta-3">
-                  Location suggestions © OpenStreetMap contributors
-                </p>
+              <div className="relative mt-3">
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  onFocus={() => setLocationFieldOpen(true)}
+                  onBlur={() => setLocationFieldOpen(false)}
+                  placeholder="City, State"
+                  className="w-full rounded-pill border border-border-5 bg-white px-4 py-3.5 text-sm outline-none focus:border-ink"
+                />
+                {locationFieldOpen && locationSuggestions.length > 0 && (
+                  <ul className="absolute inset-x-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-card border border-border-3 bg-white shadow-lg">
+                    {locationSuggestions.map((s) => (
+                      <li key={s.label} className="border-b border-border-3 last:border-b-0">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => pickLocationSuggestion(s)}
+                          className="flex w-full items-baseline justify-between gap-2 px-3.5 py-3 text-left hover:bg-border-4"
+                        >
+                          <span className="text-sm text-ink">{s.city}</span>
+                          <span className="flex-none font-mono text-[11px] text-meta-2">{s.state}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
+              <p className="mt-2 font-mono text-[10px] text-meta-3">
+                Location suggestions © OpenStreetMap contributors
+              </p>
             </section>
 
             {/* 3 — What's happening? (required) */}
@@ -631,7 +587,10 @@ export function ComposerWizard() {
                   rows={6}
                   className="w-full rounded-card border border-border-5 bg-white px-4 py-3 text-sm outline-none focus:border-ink"
                 />
-                <div className="mt-3 flex flex-wrap gap-2">
+                <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-meta-2">
+                  Got receipts? Attach them — let&apos;s expose them.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => openFilePicker("image")}
@@ -717,7 +676,7 @@ export function ComposerWizard() {
               </div>
               <p className="mt-3 text-sm text-text">&ldquo;{description}&rdquo;</p>
               <p className="mt-4 font-mono text-[11px] text-meta-3">
-                Posted by {identityLabel || "Anonymous Citizen"}
+                Posted by {identityLabel || "an anonymous citizen"}
               </p>
             </div>
 
@@ -727,7 +686,7 @@ export function ComposerWizard() {
                   <span className="h-1.5 w-1.5 rounded-full bg-ink" /> Home feed
                 </p>
                 <p className="font-mono text-xs text-meta-2">
-                  under {identityLabel || "Anonymous Citizen"}
+                  under {identityLabel || "an anonymous citizen"}
                 </p>
               </div>
               <div className="flex items-center justify-between gap-3 px-4 py-3">
