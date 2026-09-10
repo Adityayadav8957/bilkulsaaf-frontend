@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -40,16 +40,12 @@ function personSubtitle(person: { designation?: string; organization?: string })
 
 /** Object URL for a local file preview (image/video thumbnails), revoked on change/unmount. */
 function useObjectUrl(file: File | null): string | null {
-  const [url, setUrl] = useState<string | null>(null);
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
-    if (!file) {
-      setUrl(null);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(file);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
   return url;
 }
 
@@ -564,7 +560,6 @@ export function ComposerWizard() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={filePreview} alt="Attachment preview" className="max-h-64 w-full object-cover" />
                 ) : (
-                  // eslint-disable-next-line jsx-a11y/media-has-caption
                   <video src={filePreview} controls className="max-h-64 w-full bg-ink" />
                 )}
                 <p className="flex items-center justify-between gap-2 px-3 py-2 font-mono text-xs text-meta-2">

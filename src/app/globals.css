@@ -122,31 +122,39 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-h1,
-.h1 {
-  font-family: var(--font-headline), Georgia, serif;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  font-size: clamp(32px, 5.4vw, 54px);
-  line-height: 1.03;
-}
+/* Layered (not bare top-level) so a per-instance Tailwind utility — e.g. a
+   hero's text-[clamp(...)] or a compact text-xl on a card heading — can
+   still override these defaults. Tailwind v4's utilities layer is declared
+   after base, so utilities always win at equal specificity; bare/unlayered
+   CSS would instead beat ALL layered rules regardless of specificity,
+   silently defeating every per-instance size override written elsewhere. */
+@layer base {
+  h1,
+  .h1 {
+    font-family: var(--font-headline), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-size: clamp(32px, 5.4vw, 54px);
+    line-height: 1.03;
+  }
 
-h2,
-.h2 {
-  font-family: var(--font-headline), Georgia, serif;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-size: clamp(20px, 2.5vw, 26px);
-  line-height: 1.15;
-}
+  h2,
+  .h2 {
+    font-family: var(--font-headline), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(20px, 2.5vw, 26px);
+    line-height: 1.15;
+  }
 
-h3,
-.h3 {
-  font-family: var(--font-headline), Georgia, serif;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-size: clamp(16px, 1.6vw, 18px);
-  line-height: 1.25;
+  h3,
+  .h3 {
+    font-family: var(--font-headline), Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: clamp(16px, 1.6vw, 18px);
+    line-height: 1.25;
+  }
 }
 
 /* Long-form article/body copy set in the newsprint body serif rather than the UI sans. */
@@ -252,7 +260,7 @@ h3,
 .splash-stamp {
   opacity: 0;
   transform-origin: center;
-  animation: splash-stamp 550ms 350ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: splash-stamp 950ms 350ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

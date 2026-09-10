@@ -110,7 +110,7 @@ export default async function PostDetailPage({
       <div className="min-w-0 max-w-3xl flex-1">
 
       <article className="rule-red overflow-hidden rounded-card border border-border-3 bg-white p-5">
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           {post.personSnapshot.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -123,9 +123,11 @@ export default async function PostDetailPage({
           )}
           <div className="min-w-0 flex-1">
             <Link href={`/people/${post.person}`} className="hover:underline">
-              <h1>{post.personSnapshot.name}</h1>
+              <h1 className="truncate text-xl font-bold leading-tight sm:text-2xl">
+                {post.personSnapshot.name}
+              </h1>
             </Link>
-            <p className="mt-1 text-sm text-meta-2">
+            <p className="mt-0.5 truncate text-sm text-meta-2">
               {[post.personSnapshot.designation, post.personSnapshot.organization]
                 .filter(Boolean)
                 .join(", ")}
@@ -133,10 +135,10 @@ export default async function PostDetailPage({
               {locationLabel(post.personSnapshot.state, post.personSnapshot.city)}
             </p>
           </div>
-          <span className="flex-none font-mono text-xs text-meta-3">
-            {formatRelativeTime(post.createdAt)}
-          </span>
-          <ReportButton targetType="post" targetId={post._id} />
+          <div className="flex flex-none items-center gap-1">
+            <span className="font-mono text-xs text-meta-3">{formatRelativeTime(post.createdAt)}</span>
+            <ReportButton targetType="post" targetId={post._id} />
+          </div>
         </div>
 
         <p className="font-newsbody mt-4 text-lg leading-relaxed text-text">

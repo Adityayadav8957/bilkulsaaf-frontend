@@ -113,7 +113,7 @@ export default async function PersonDetailPage({
           <div aria-hidden="true" className="texture-avatar h-16 w-16 flex-none rounded-full" />
         )}
         <div className="min-w-0">
-          <h1>{person.name}</h1>
+          <h1 className="text-2xl leading-tight sm:text-3xl">{person.name}</h1>
           <p className="mt-1 text-text-muted">
             {[person.designation, person.organization].filter(Boolean).join(", ")}
           </p>
