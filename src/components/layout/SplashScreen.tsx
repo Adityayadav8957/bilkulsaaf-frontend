@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const TOTAL_MS = 2200;
+const TOTAL_MS = 2800;
 
 function BuildingMark() {
   return (

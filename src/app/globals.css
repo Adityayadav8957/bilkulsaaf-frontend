@@ -250,11 +250,11 @@ body {
 }
 
 .splash-fill {
-  animation: splash-fill 1850ms linear forwards;
+  animation: splash-fill 2450ms linear forwards;
 }
 
 .splash-overlay {
-  animation: splash-fade 2200ms linear forwards;
+  animation: splash-fade 2800ms linear forwards;
 }
 
 .splash-stamp {
