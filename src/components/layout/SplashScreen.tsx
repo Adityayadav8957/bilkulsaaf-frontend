@@ -34,13 +34,14 @@ function BuildingMark() {
 }
 
 /**
- * One-shot boot splash — shown once per browser session (root layout stays
- * mounted across client-side navigations, so this only runs on a real page
- * load). The progress bar, stamp slam, and dismiss fade are pure CSS
- * keyframe animations (see .splash-fill / .splash-stamp / .splash-overlay in
- * globals.css) rather than a JS-driven timer loop, so they can't get stuck
- * if a timer is throttled — a single setTimeout just unmounts the node once
- * the animation is done.
+ * Boot splash — shown on every full page load (root layout stays mounted
+ * across client-side navigations, so this never re-triggers on in-app tab
+ * switches, only on an actual reload/fresh load). The progress bar, stamp
+ * slam, and dismiss fade are pure CSS keyframe animations (see .splash-fill
+ * / .splash-stamp / .splash-overlay in globals.css) rather than a JS-driven
+ * timer loop, so they can't get stuck if a timer is throttled — a single
+ * setTimeout just unmounts the node once the full sequence (stamp slam +
+ * progress fill) has finished, matching TOTAL_MS to the CSS durations below.
  */
 export function SplashScreen() {
   const [mounted, setMounted] = useState(true);
@@ -48,20 +49,13 @@ export function SplashScreen() {
 
   useEffect(() => {
     // React Strict Mode (dev only) double-invokes effects: mount, cleanup,
-    // mount again — synchronously, before paint. A naive cleanup that
-    // clears the timer breaks that on the second pass, since sessionStorage
-    // now already has "splash-shown" set from the first pass, so the splash
-    // would hide itself instantly. This component lives for the app's
-    // lifetime (mounted once in the root layout, never really unmounted),
-    // so skip the duplicate pass entirely and let the one real timer run.
+    // mount again — synchronously, before paint. This component lives for
+    // the app's lifetime (mounted once in the root layout, never really
+    // unmounted), so skip the duplicate pass entirely and let the one real
+    // timer — started on the first pass — run to completion.
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    if (sessionStorage.getItem("splash-shown")) {
-      setMounted(false);
-      return;
-    }
-    sessionStorage.setItem("splash-shown", "1");
     setTimeout(() => setMounted(false), TOTAL_MS);
   }, []);
 
